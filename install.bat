@@ -1,5 +1,5 @@
 @echo off
-title Portable AI USB Installer - Windows
+title USB Pocket AI Installer - Windows
 color 0A
 
 :: ============================================
@@ -8,32 +8,18 @@ color 0A
 set REPO_URL=https://github.com/dallenshelly/USB-POCKET-AI.git
 :: ============================================
 
-:: ============================================
-:: CHECK IF RUNNING FROM TEMP FOLDER
-:: If not, copy self to temp and relaunch
-:: ============================================
+:: Check if running from temp folder
 echo %cd% | find /i "%temp%" >nul
 if %errorLevel% neq 0 (
     echo Script is running from USB. Copying to temp folder...
-    
-    :: Create unique temp folder
     set TEMP_SCRIPT_DIR=%temp%\PortableAI_Installer_%random%
     mkdir "%TEMP_SCRIPT_DIR%" 2>nul
-    
-    :: Copy this script to temp
     copy "%~f0" "%TEMP_SCRIPT_DIR%\install.bat" >nul
-    
-    :: Also copy any helper files if they exist (like VBS scripts)
     if exist "scripts\*.*" xcopy /E /I /Y "scripts" "%TEMP_SCRIPT_DIR%\scripts\" >nul
-    
     echo Relaunching from temp folder...
     start "" "%TEMP_SCRIPT_DIR%\install.bat"
     exit /b
 )
-
-:: We are now running from temp folder - continue with installation
-echo Running from temp folder: %cd%
-echo.
 
 :: Check for Administrator privileges
 net session >nul 2>&1
@@ -46,7 +32,7 @@ if %errorLevel% neq 0 (
 cd /d "%~dp0"
 cls
 echo ================================================
-echo    Portable AI USB Installer - Windows
+echo    USB Pocket AI Installer - Windows
 echo ================================================
 echo.
 
@@ -54,6 +40,7 @@ echo.
 echo Scanning for removable USB drives...
 echo.
 set drive_count=0
+setlocal enabledelayedexpansion
 for %%D in (D: E: F: G: H: I: J: K: L: M: N: O: P: Q: R: S: T: U: V: W: X: Y: Z:) do (
     if exist %%D\NUL (
         fsutil fsinfo drivetype %%D | find "Removable" >nul
@@ -113,27 +100,22 @@ mkdir "%USB_ROOT%\PortableAI" 2>nul
 cd /d "%USB_ROOT%\PortableAI"
 
 :: ============================================
-:: CHECK FOR GIT AND SHOW VBS POPUP IF MISSING
+:: CHECK FOR GIT
 :: ============================================
 where git >nul 2>&1
 if %errorLevel% neq 0 (
     echo Git is not installed.
-    
-    :: Create VBS popup message
     (
         echo MsgBox "Git is required to continue installation." ^& vbCrLf ^& vbCrLf ^& _
                "Would you like to open the Git download page?", _
                vbYesNo + vbQuestion, "Git Not Found"
     ) > "%temp%\git_prompt.vbs"
     
-    :: Run the VBS and capture result (6 = Yes, 7 = No)
     for /f %%a in ('cscript //nologo "%temp%\git_prompt.vbs"') do set result=%%a
     del "%temp%\git_prompt.vbs"
     
     if "%result%"=="6" (
-        echo Opening Git download page...
         start https://git-scm.com/download/win
-        echo.
         echo Please install Git, then run this installer again.
         pause
         exit /b
@@ -151,11 +133,9 @@ echo Git is installed. Continuing...
 :: ============================================
 echo.
 echo Cloning repository from: %REPO_URL%
-echo This may take a moment...
-
 git clone "%REPO_URL%" temp_repo
 if %errorLevel% neq 0 (
-    echo Failed to clone repository. Check URL and try again.
+    echo Failed to clone repository.
     pause
     exit /b
 )
@@ -172,24 +152,84 @@ if not exist "models" mkdir models
 if not exist "logs" mkdir logs
 
 :: ============================================
-:: INSTALL OLLAMA PORTABLE
+:: DOWNLOAD AND INSTALL OLLAMA TO USB
 :: ============================================
 echo.
-echo Installing Ollama portable...
+echo ================================================
+echo    Installing Ollama to USB...
+echo ================================================
+echo.
+
 mkdir ollama_bin 2>nul
 
-echo Downloading Ollama...
+echo Downloading Ollama for Windows...
 powershell -Command "Invoke-WebRequest -Uri 'https://github.com/ollama/ollama/releases/download/v0.5.7/ollama-windows-amd64.zip' -OutFile '%USB_ROOT%\PortableAI\ollama.zip'"
 
-echo Extracting Ollama...
+echo Extracting Ollama to USB...
 powershell -Command "Expand-Archive -Path '%USB_ROOT%\PortableAI\ollama.zip' -DestinationPath '%USB_ROOT%\PortableAI\ollama_bin' -Force"
 del "%USB_ROOT%\PortableAI\ollama.zip"
 
+echo Ollama installed successfully to USB.
+
 :: ============================================
-:: CREATE VBS HELPER SCRIPTS (if not in repo)
+:: DOWNLOAD AND INSTALL ANYTHINGLLM TO USB
+:: ============================================
+echo.
+echo ================================================
+echo    Installing AnythingLLM to USB...
+echo ================================================
+echo.
+
+mkdir anythingllm 2>nul
+mkdir anythingllm_data 2>nul
+
+echo Downloading AnythingLLM for Windows...
+powershell -Command "Invoke-WebRequest -Uri 'https://github.com/Mintplex-Labs/anything-llm/releases/download/v1.6.9/AnythingLLMDesktop-1.6.9.exe' -OutFile '%USB_ROOT%\PortableAI\anythingllm\AnythingLLM_Setup.exe'"
+
+echo.
+echo ================================================
+echo    IMPORTANT: Install AnythingLLM to USB
+echo ================================================
+echo.
+echo The AnythingLLM installer will now open.
+echo.
+echo **CRITICAL STEP - DO THIS EXACTLY:**
+echo.
+echo 1. When asked "Choose Install Location", click BROWSE
+echo 2. Navigate to: %USB_ROOT%\PortableAI\anythingllm
+echo 3. Click "Install"
+echo 4. DO NOT launch AnythingLLM after installation
+echo.
+echo This keeps EVERYTHING on your USB drive!
+echo.
+pause
+
+:: Run the AnythingLLM installer
+start /wait "" "%USB_ROOT%\PortableAI\anythingllm\AnythingLLM_Setup.exe" /SILENT /DIR="%USB_ROOT%\PortableAI\anythingllm"
+
+:: If silent install fails, try normal
+if %errorLevel% neq 0 (
+    echo Silent install failed. Please install manually.
+    start /wait "" "%USB_ROOT%\PortableAI\anythingllm\AnythingLLM_Setup.exe"
+)
+
+:: Delete installer
+del "%USB_ROOT%\PortableAI\anythingllm\AnythingLLM_Setup.exe" 2>nul
+
+:: Create portable data config
+(
+echo # USB Pocket AI - AnythingLLM Portable Configuration
+echo STORAGE_DIR=./anythingllm_data
+echo OLLAMA_HOST=http://localhost:11434
+echo OLLAMA_MODEL_TOKEN_LIMIT=4096
+) > "%USB_ROOT%\PortableAI\anythingllm_data\.env"
+
+echo AnythingLLM installed successfully to USB.
+
+:: ============================================
+:: CREATE VBS HELPER SCRIPTS
 :: ============================================
 if not exist "scripts\elevate.vbs" (
-    echo Creating elevate.vbs...
     (
         echo If WScript.Arguments.Count ^>= 1 Then
         echo   If Not WScript.Arguments.Named.Exists^("elevated"^) Then
@@ -208,72 +248,84 @@ if not exist "scripts\elevate.vbs" (
 )
 
 if not exist "scripts\check_gpu.vbs" (
-    echo Creating check_gpu.vbs...
     (
         echo Set objWMIService = GetObject^("winmgmts:\\.\root\CIMV2"^)
         echo Set colItems = objWMIService.ExecQuery^("SELECT * FROM Win32_VideoController"^)
         echo For Each objItem in colItems
         echo   name = objItem.Name
         echo   adapterRAM = objItem.AdapterRAM / 1073741824
-        echo   If InStr^(name, "NVIDIA"^) ^> 0 Or InStr^(name, "AMD"^) ^> 0 Then
-        echo     If adapterRAM ^>= 8 Then
-        echo       WScript.Echo "GPU: " ^& name ^& " (" ^& Round^(adapterRAM,1^) ^& "GB^) - Can run 13B+ models"
-        echo     ElseIf adapterRAM ^>= 4 Then
-        echo       WScript.Echo "GPU: " ^& name ^& " (" ^& Round^(adapterRAM,1^) ^& "GB^) - Can run 7B models"
-        echo     Else
-        echo       WScript.Echo "GPU: " ^& name ^& " (" ^& Round^(adapterRAM,1^) ^& "GB^) - CPU mode recommended"
-        echo     End If
-        echo   Else
-        echo     WScript.Echo "No dedicated GPU detected. CPU mode only."
-        echo   End If
+        echo   WScript.Echo "GPU: " ^& name ^& " - VRAM: " ^& Round^(adapterRAM,1^) ^& " GB"
         echo Next
     ) > "scripts\check_gpu.vbs"
 )
 
-if not exist "scripts\hide_console.vbs" (
-    echo Creating hide_console.vbs...
-    (
-        echo CreateObject^("WScript.Shell"^).Run "cmd /c start-windows.bat", 0, False
-    ) > "scripts\hide_console.vbs"
-)
+:: ============================================
+:: CREATE WINDOWS LAUNCHER
+:: ============================================
+(
+echo @echo off
+echo title USB Pocket AI
+echo color 0A
+echo cd /d "%%~dp0"
+echo set OLLAMA_MODELS=%%~dp0models
+echo set OLLAMA_HOST=127.0.0.1:11434
+echo set ANYTHINGLLM_DATA=%%~dp0anythingllm_data
+echo tasklist /FI "IMAGENAME eq ollama.exe" 2^>NUL ^| find /I "ollama.exe" ^>NUL
+echo if %%errorLevel%% equ 0 ^(
+echo     echo Ollama is already running.
+echo ^) else ^(
+echo     echo Starting Ollama AI Engine...
+echo     start /b "" "%%~dp0ollama_bin\ollama.exe" serve ^> logs\ollama.log 2^>^&1
+echo     timeout /t 3 /nobreak ^>nul
+echo ^)
+echo set PATH=%%~dp0ollama_bin;%%PATH%%
+echo echo.
+echo echo Starting AnythingLLM Chat Interface...
+echo echo.
+echo if exist "anythingllm\AnythingLLM.exe" ^(
+echo     start "" "anythingllm\AnythingLLM.exe"
+echo ^) else if exist "anythingllm\AnythingLLM Desktop.exe" ^(
+echo     start "" "anythingllm\AnythingLLM Desktop.exe"
+echo ^) else ^(
+echo     echo AnythingLLM not found. Using command line mode.
+echo     echo.
+echo     echo Available models:
+echo     ollama list
+echo     echo.
+echo     echo Commands:
+echo     echo   ollama list
+echo     echo   ollama run ^<model^>
+echo     echo.
+echo     cmd /k
+echo     exit
+echo ^)
+echo.
+echo ================================================
+echo    USB Pocket AI is Running!
+echo ================================================
+echo.
+echo - Ollama AI Engine: Active
+echo - AnythingLLM Chat: Launching...
+echo - Data stays on USB - No traces left
+echo.
+echo Close this window to shut down the AI.
+echo ================================================
+echo.
+pause ^>nul
+echo Cleaning up...
+taskkill /f /im ollama.exe ^>nul 2^>^&1
+echo Done.
+) > "start-windows.bat"
 
 :: ============================================
-:: CREATE WINDOWS LAUNCHER (if not in repo)
-:: ============================================
-if not exist "start-windows.bat" (
-    echo Creating start-windows.bat...
-    (
-        echo @echo off
-        echo cd /d "%%~dp0"
-        echo set OLLAMA_MODELS=%%~dp0models
-        echo set OLLAMA_HOST=127.0.0.1:11434
-        echo echo Starting Portable AI from USB...
-        echo start /b "" "%%~dp0ollama_bin\ollama.exe" serve ^> logs\ollama.log 2^>^&1
-        echo echo Ollama server running in background.
-        echo echo.
-        echo echo Available models:
-        echo "%%~dp0ollama_bin\ollama.exe" list
-        echo echo.
-        echo echo Commands:
-        echo echo   ollama list
-        echo echo   ollama run ^<model^>
-        echo echo   ollama pull ^<model^>
-        echo echo.
-        echo set PATH=%%~dp0ollama_bin;%%PATH%%
-        echo cmd /k
-    ) > "start-windows.bat"
-)
-
-:: ============================================
-:: IMPORT GGUF FILES FROM gguf FOLDER
+:: IMPORT GGUF FILES
 :: ============================================
 echo.
 echo Checking for GGUF files in gguf folder...
 
 if exist "gguf\*.gguf" (
-    echo Found GGUF files. Starting Ollama for import...
+    echo Found GGUF files. Importing to Ollama...
     
-    :: Start Ollama in background
     start /b "" "%USB_ROOT%\PortableAI\ollama_bin\ollama.exe" serve
     timeout /t 3 /nobreak >nul
     
@@ -290,41 +342,41 @@ if exist "gguf\*.gguf" (
         del "%USB_ROOT%\PortableAI\Modelfile_temp"
     )
     
-    :: Stop Ollama
     taskkill /f /im ollama.exe >nul 2>&1
     echo Import complete.
 ) else (
     echo No GGUF files found in 'gguf' folder.
-    echo.
-    echo Please place your .gguf files in the 'gguf' folder, then run:
-    echo   cd /d "%USB_ROOT%\PortableAI"
-    echo   start /b "" ollama_bin\ollama.exe serve
-    echo   ollama create MODELNAME -f ./Modelfile
+    echo Place your .gguf files there and re-run to import.
 )
 
 :: Create version file
 echo 1.0 > version.txt
 
-:: Clean up temp script folder (optional - keep for debugging)
-:: rmdir /S /Q "%cd%" 2>nul
+:: Clean up temp script folder
+rmdir /S /Q "%cd%" 2>nul
 
 echo.
 echo ================================================
 echo    Installation Complete!
 echo ================================================
 echo.
-echo Portable AI installed to: %selected_drive%\PortableAI
+echo USB Pocket AI installed to: %selected_drive%\PortableAI
 echo.
-echo Repository cloned from: %REPO_URL%
+echo Contents installed:
+echo   - Ollama AI Engine (portable)
+echo   - AnythingLLM Chat Interface (portable)
+echo   - Your cloned repository
+echo   - Imported GGUF models (if any)
 echo.
 echo To use:
-echo   1. Run 'start-windows.bat' from the PortableAI folder
-echo   2. Type 'ollama list' to see available models
-echo   3. Type 'ollama run MODELNAME' to start chatting
+echo   1. Eject and re-insert the USB drive
+echo   2. Open the PortableAI folder
+echo   3. Double-click 'start-windows.bat'
+echo   4. AnythingLLM will open automatically
 echo.
-echo VBS helper scripts are in the 'scripts' folder:
-echo   - elevate.vbs : Request admin privileges
-echo   - check_gpu.vbs : Check GPU capability
-echo   - hide_console.vbs : Run with console hidden
+echo In AnythingLLM Settings:
+echo   - LLM Provider: Ollama
+echo   - API Base URL: http://localhost:11434
+echo   - Select your imported model
 echo.
 pause
