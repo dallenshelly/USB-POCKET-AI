@@ -5,7 +5,7 @@ color 0A
 :: ============================================
 :: HARDCODED GITHUB REPOSITORY URL - EDIT THIS
 :: ============================================
-set REPO_URL=https://github.com/YOUR_USERNAME/YOUR_REPO.git
+set REPO_URL=https://github.com/dallenshelly/USB-POCKET-AI.git
 :: ============================================
 
 :: ============================================
