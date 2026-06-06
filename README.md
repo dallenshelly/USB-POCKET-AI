@@ -239,14 +239,3 @@ This project is open-source. Models and Ollama have their own respective license
 | **Uninstalling** | Clean removal instructions |
 
 ---
-
-## 🔧 To Add to Your Repository
-
-1. Save the content above as `README.md`
-2. Add and commit:
-
-```bash
-git add README.md
-git commit -m "Add comprehensive README for USB-POCKET-AI"
-git push
-```
