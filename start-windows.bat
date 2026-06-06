@@ -184,7 +184,7 @@ mkdir anythingllm 2>nul
 mkdir anythingllm_data 2>nul
 
 echo Downloading AnythingLLM for Windows...
-powershell -Command "Invoke-WebRequest -Uri 'https://github.com/Mintplex-Labs/anything-llm/releases/download/v1.6.9/AnythingLLMDesktop-1.6.9.exe' -OutFile '%USB_ROOT%\PortableAI\anythingllm\AnythingLLM_Setup.exe'"
+powershell -Command "Invoke-WebRequest -Uri 'https://cdn.anythingllm.com/latest/AnythingLLMDesktop.exe' -OutFile '%USB_ROOT%\PortableAI\anythingllm\AnythingLLM_Setup.exe'"
 
 echo.
 echo ================================================
