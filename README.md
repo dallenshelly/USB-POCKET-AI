@@ -221,7 +221,6 @@ This project is open-source. Models and Ollama have their own respective license
 ---
 
 **Made for pentesters, researchers, and AI enthusiasts who value privacy and freedom.**
-```
 
 ---
 
